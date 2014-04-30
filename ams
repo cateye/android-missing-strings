@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+import re, os
+from fpdf import FPDF
+
+PATTERN=re.compile(r'<string name="(.*?)".*>(.*?)</string>', re.I | re.MULTILINE)
+
+def getStringsFilePaths():
+	'''Gets all the relative paths to strings.xml files in a list.'''
+	p = os.popen("find . | grep strings.xml")
+	filesPath = p.readlines()
+	p.close()
+	return filesPath
+
+
+def readXml(fileName):
+	result={}
+	global PATTERN
+	f=open(fileName,'r')
+	line = f.readline()
+	while line!="":
+		matcher = PATTERN.search(line)
+		if matcher != None:
+		    result[matcher.group(1)]=matcher.group(2)
+		line = f.readline()
+	f.close()
+	return result
+
+if __name__ == '__main__':
+	xmlOriginalFile="./res/values/strings.xml"
+	originalDict=readXml(xmlOriginalFile)
+	lenOriginal = float(len(originalDict))
+	xmlFiles=getStringsFilePaths()
+
+	pdf=FPDF()
+	pdf.add_page()
+	pdf.set_font('Arial','B',12)
+
+	for xmlFile in xmlFiles:
+		fileName = xmlFile.strip()
+		pdf.cell(40,10,"Language file: " + fileName,0,1)
+		if fileName is not xmlOriginalFile:
+			tempDict = readXml(fileName)	
+			tempCompletion = (len(tempDict)/lenOriginal)*100
+			pdf.cell(40,10,"%d%%completed " % (tempCompletion),0,1)
+			pdf.cell(40,10,"Missing elements: ",0,1)
+			for items in originalDict:
+				if items not in tempDict:
+					pdf.cell(40,10,items,0,1)
+			pdf.cell(40,10, "------------------\n\n",0,1)
+
+ 	pdf.output('tuto1.pdf','F')
+
+
