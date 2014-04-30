@@ -4,50 +4,86 @@ from fpdf import FPDF
 
 PATTERN=re.compile(r'<string name="(.*?)".*>(.*?)</string>', re.I | re.MULTILINE)
 
+class MissingStringsReport:
+    filePath = None
+    originalStringsDict = None
+    myStringsDict = None
+    missingKeys = None
+
+    def __init__(self, stringsFilePath, originalStringsDict):
+        '''stringsFilePath - The path to the strings.xml file we want to check.
+        originalStringsDict - A dictionary containing all the string-keys and original language values (usually inside res/values/strings.xml)
+        '''
+        self.stringsFilePath = stringsFilePath
+        self.originalStringsDict = originalStringsDict
+        self.myStringsDict = MissingStringsReport.readXML(self.stringsFilePath)
+        self.missingKeys = MissingStringsReport.findMissingKeys(self.originalStringsDict, self.myStringsDict)
+
+    def getMissingKeys(self):
+        '''Returns a list with the missing keys.'''
+        return self.missingKeys
+
+    def getMyStringsDict(self):
+        return self.myStringsDict
+
+    def getCompletePercentage(self):
+        return (len(self.myStringsDict)/float(len(self.originalStringsDict))) * 100
+
+    @staticmethod
+    def findMissingKeys(fullDict, incompleteDict):
+        '''Given the original (fullDict) strings dictionary, this returns a list of the missing keys on incompleteDict.
+           If the file is fully translated it will return an empty list.'''
+        missingKeys = []
+        for k in fullDict:
+            if k not in incompleteDict:
+                missingKeys.append(k)
+        return missingKeys
+
+    @staticmethod
+    def readXML(fileName):
+        result={}
+        global PATTERN
+        f=open(fileName,'r')
+        line = f.readline()
+        while line!="":
+            matcher = PATTERN.search(line)
+            if matcher != None:
+                result[matcher.group(1)]=matcher.group(2)
+            line = f.readline()
+        f.close()
+        return result
+
+
 def getStringsFilePaths():
-	'''Gets all the relative paths to strings.xml files in a list.'''
-	p = os.popen("find . | grep strings.xml")
-	filesPath = p.readlines()
-	p.close()
-	return filesPath
+    '''Gets all the relative paths to strings.xml files in a list.'''
+    p = os.popen("find . | grep strings.xml")
+    filesPath = p.readlines()
+    p.close()
+    return filesPath
 
 
-def readXml(fileName):
-	result={}
-	global PATTERN
-	f=open(fileName,'r')
-	line = f.readline()
-	while line!="":
-		matcher = PATTERN.search(line)
-		if matcher != None:
-		    result[matcher.group(1)]=matcher.group(2)
-		line = f.readline()
-	f.close()
-	return result
 
 if __name__ == '__main__':
-	xmlOriginalFile="./res/values/strings.xml"
-	originalDict=readXml(xmlOriginalFile)
-	lenOriginal = float(len(originalDict))
-	xmlFiles=getStringsFilePaths()
+    xmlOriginalFile="./res/values/strings.xml"
+    originalDict=MissingStringsReport.readXML(xmlOriginalFile)
+    xmlFilePaths=getStringsFilePaths()
 
-	pdf=FPDF()
-	pdf.add_page()
-	pdf.set_font('Arial','B',12)
+    pdf=FPDF()
+    pdf.add_page()
+    pdf.set_font('Arial','B',12)
 
-	for xmlFile in xmlFiles:
-		fileName = xmlFile.strip()
-		pdf.cell(40,10,"Language file: " + fileName,0,1)
-		if fileName is not xmlOriginalFile:
-			tempDict = readXml(fileName)	
-			tempCompletion = (len(tempDict)/lenOriginal)*100
-			pdf.cell(40,10,"%d%%completed " % (tempCompletion),0,1)
-			pdf.cell(40,10,"Missing elements: ",0,1)
-			for items in originalDict:
-				if items not in tempDict:
-					pdf.cell(40,10,items,0,1)
-			pdf.cell(40,10, "------------------\n\n",0,1)
+    for xmlFilePath in xmlFilePaths:
+        filePath = xmlFilePath.strip()
+        pdf.cell(40,10,"Language file: " + filePath,0,1)
+        if filePath is not xmlOriginalFile:
+            report = MissingStringsReport(filePath, originalDict)
+            pdf.cell(40,10,"%d%%completed " % (report.getCompletePercentage()),0,1)
+            pdf.cell(40,10,"Missing elements: ",0,1)
+            for missingKey in report.getMissingKeys():
+                pdf.cell(40,10,missingKey,0,1)
+                pdf.set_font('Arial','I',10)
+                pdf.cell(40,10,originalDict[missingKey],0,1)
+                pdf.set_font('Arial','B',12)
+            pdf.cell(40,10, "------------------\n\n",0,1)
 
- 	pdf.output('tuto1.pdf','F')
-
-
+    pdf.output('tuto1.pdf','F')
