@@ -123,7 +123,7 @@ def main(argv):
                 pdf.set_font('Arial','B',12)
             pdf.cell(40,10, "------------------\n\n",0,1)
 
-    pdf.output("/Users/winchoasco/" + outputFile + '.pdf','F')
+    pdf.output(outputFile + '.pdf','F')
 
 
 if __name__ == '__main__':
