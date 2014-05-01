@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-import re, os
+import re
+import os
+import sys
+import getopt
 from fpdf import FPDF
 
 PATTERN=re.compile(r'<string name="(.*?)".*>(.*?)</string>', re.I | re.MULTILINE)
@@ -61,12 +64,44 @@ def getStringsFilePaths():
     p.close()
     return filesPath
 
+def usage():
+    usage = """ 
+    -h --help            Print this help
+    -o --oFile           Specify the output file name for the PDF report
+    """
+    print usage
+
+def main(argv):
+
+    outputFile = ''
+    print argv
 
 
-if __name__ == '__main__':
+
+    try:
+        opts, args = getopt.getopt(argv, "ho:l:",["ofile=","lang="])
+    except getopt.GetoptError:
+        print "unhandled option"
+        usage()
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            usage()
+            sys.exit(2)
+        elif opt in ("-o", "--ofile"):
+            outputFile = arg
+        elif opt in ("-l", "--lang"):
+            if arg == "all":
+                xmlFilePaths=getStringsFilePaths()
+            else:
+                xmlFilePaths=["./res/values-" + arg + "/strings.xml"]
+        else:
+            print "unhandled option"
+            usage()
+            sys.exit(2)
+
     xmlOriginalFile="./res/values/strings.xml"
     originalDict=MissingStringsReport.readXML(xmlOriginalFile)
-    xmlFilePaths=getStringsFilePaths()
 
     pdf=FPDF()
     pdf.add_page()
@@ -74,16 +109,25 @@ if __name__ == '__main__':
 
     for xmlFilePath in xmlFilePaths:
         filePath = xmlFilePath.strip()
-        pdf.cell(40,10,"Language file: " + filePath,0,1)
-        if filePath is not xmlOriginalFile:
+        
+        if filePath != xmlOriginalFile:
+            pdf.cell(40,10,"Language file: " + filePath,0,1)
             report = MissingStringsReport(filePath, originalDict)
-            pdf.cell(40,10,"%d%%completed " % (report.getCompletePercentage()),0,1)
+            pdf.cell(40,10,"%d%% completed " % (report.getCompletePercentage()),0,1)
             pdf.cell(40,10,"Missing elements: ",0,1)
             for missingKey in report.getMissingKeys():
+                
                 pdf.cell(40,10,missingKey,0,1)
                 pdf.set_font('Arial','I',10)
                 pdf.cell(40,10,originalDict[missingKey],0,1)
                 pdf.set_font('Arial','B',12)
             pdf.cell(40,10, "------------------\n\n",0,1)
 
-    pdf.output('tuto1.pdf','F')
+    pdf.output("/Users/winchoasco/" + outputFile + '.pdf','F')
+
+
+if __name__ == '__main__':
+    
+    main(sys.argv[1:])
+
+
