@@ -65,65 +65,100 @@ def getStringsFilePaths():
     return filesPath
 
 def usage():
-    usage = """ 
+    usage = """
+    ams - Android Missing Strings reporting tool.
+    
+    Usage:
+    ams [-l xx[,yy,zz...]] -o <output_file>
+
+    Options:
     -h --help            Print this help
+
+
+    -l --lang <xx>       Specify a language or many with comma separated 2-char language codes.
+
+                         e.g:  -l cn         (creates report for Chinese strings.xml)
+                               -l cn,it,fr   (creates report for Chinese, Italian and French strings.xml files)
+
+                         If this parameter is ommited, a report with every language file found will be created.
+
+
     -o --oFile           Specify the output file name for the PDF report
+
+    Copyright (c) 2014 - The Mit License (MIT)
+
+    Authors:
+    Angel Leon <gubatron@gmail.com>
+    Katay Santos <kataysantos@gmail.com>
+
     """
     print usage
 
 def main(argv):
-
+    xmlFilePaths=[]
     outputFile = ''
-    print argv
-
-
-
     try:
         opts, args = getopt.getopt(argv, "ho:l:",["ofile=","lang="])
     except getopt.GetoptError:
         print "unhandled option"
         usage()
         sys.exit(2)
+
+    if len(opts) == 0:
+        usage()
+        print "Error: missing parameters."
+        sys.exit(2)
+
     for opt, arg in opts:
         if opt == '-h':
             usage()
             sys.exit(2)
-        elif opt in ("-o", "--ofile"):
+
+        if opt in ("-o", "--ofile"):
             outputFile = arg
-        elif opt in ("-l", "--lang"):
-            if arg == "all":
-                xmlFilePaths=getStringsFilePaths()
+
+        if opt in ("-l", "--lang"):
+            if "," in arg:
+               languages=arg.split(",")
+               for l in languages:
+                   xmlFilePaths.append("./res/values-" + l + "/strings.xml")
             else:
                 xmlFilePaths=["./res/values-" + arg + "/strings.xml"]
-        else:
-            print "unhandled option"
-            usage()
-            sys.exit(2)
+
+    if outputFile == '':
+        usage()
+        print "Error: missing -o (output file) parameter."
+        sys.exit(2)
+
+    if len(xmlFilePaths) == 0:
+        xmlFilePaths=getStringsFilePaths()
 
     xmlOriginalFile="./res/values/strings.xml"
     originalDict=MissingStringsReport.readXML(xmlOriginalFile)
 
     pdf=FPDF()
     pdf.add_page()
-    pdf.set_font('Arial','B',12)
 
     for xmlFilePath in xmlFilePaths:
         filePath = xmlFilePath.strip()
         
         if filePath != xmlOriginalFile:
-            pdf.cell(40,10,"Language file: " + filePath,0,1)
             report = MissingStringsReport(filePath, originalDict)
-            pdf.cell(40,10,"%d%% completed " % (report.getCompletePercentage()),0,1)
+            print "Generating report for " + filePath + "..."
+            pdf.set_font('Arial','B',12)
+            pdf.cell(100,10,"Language file: " + filePath,0,0)
+            pdf.cell(40,10,"%d%% completed " % (report.getCompletePercentage()),0,1,'R')
             pdf.cell(40,10,"Missing elements: ",0,1)
-            for missingKey in report.getMissingKeys():
-                
-                pdf.cell(40,10,missingKey,0,1)
-                pdf.set_font('Arial','I',10)
-                pdf.cell(40,10,originalDict[missingKey],0,1)
-                pdf.set_font('Arial','B',12)
-            pdf.cell(40,10, "------------------\n\n",0,1)
 
-    pdf.output(outputFile + '.pdf','F')
+            for missingKey in report.getMissingKeys():
+                pdf.set_font('Arial','I',8)
+                tag = "<string name=\"%s\">%s</string>" % (missingKey, originalDict[missingKey])
+                pdf.multi_cell(190,10,tag,1,1)
+
+            pdf.add_page()
+
+    pdf.output(outputFile,'F')
+    print "\nSuccess: Android Missing String report ready at " + outputFile
 
 
 if __name__ == '__main__':
