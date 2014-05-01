@@ -30,17 +30,11 @@ ams [-l xx[,yy,zz...]] -o <output_file>
 
 
     -o --oFile           Specify the output file name for the PDF report
-
-    Copyright (c) 2014 - The Mit License (MIT)
-
-    Authors:
-    Angel Leon <gubatron@gmail.com>
-    Katay Santos <kataysantos@gmail.com>
 ```
 
 ## License
 Copyright (c) 2014 - The Mit License (MIT)
 
 ## Authors
-Angel Leon <gubatron@gmail.com>
-Katay Santos <kataysantos@gmail.com>
+ - Angel Leon <gubatron@gmail.com>
+ - Katay Santos <kataysantos@gmail.com>
