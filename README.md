@@ -36,5 +36,5 @@ ams [-l xx[,yy,zz...]] -o <output_file>
 Copyright (c) 2014 - The Mit License (MIT)
 
 ## Authors
- - [Angel Leon](@gubatron) <gubatron@gmail.com>
- - [Katay Santos](@cateye) <kataysantos@gmail.com>
+ - [Angel Leon](@gubatron) 
+ - [Katay Santos](@cateye)
